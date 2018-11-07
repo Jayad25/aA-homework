@@ -12,7 +12,7 @@ class PlayDBConnection < SQLite3::Database
 end
 
 class Play
-  attr_accessor :title, :year, :playwright_id
+  attr_accessor :title, :year, :playwright_id, :id
 
   def self.all
     data = PlayDBConnection.instance.execute("SELECT * FROM plays")
@@ -28,7 +28,7 @@ class Play
     WHERE
     title = ?
     SQL
-    x
+    Play.new(x.first)
   end
 
   def initialize(options)
@@ -63,11 +63,11 @@ class Play
 end
 
 class Playwright
-  attr_accessor :title, :year, :playwright_id
+  attr_accessor :name, :birth_year, :id
 
   def self.all
-    data = PlayDBConnection.instance.execute("SELECT * FROM playwright")
-    data.map { |datum| Play.new(datum) }
+    data = PlayDBConnection.instance.execute("SELECT * FROM playwrights")
+    data.map { |datum| Playwright.new(datum) }
   end
 
   def self.find_by_name(name)
@@ -75,7 +75,7 @@ class Playwright
     SELECT
       *
     FROM
-      playwright
+      playwrights
     WHERE
     name = ?
     SQL
@@ -92,18 +92,18 @@ class Playwright
     raise "#{self} already in database" if self.id
     PlayDBConnection.instance.execute(<<-SQL, self.name, self.birth_year)
       INSERT INTO
-        playwright (name, birth_year)
+        playwrights (name, birth_year)
       VALUES
         (?, ?)
     SQL
-    self.id = PlayDBConnection.instance.last_insert_row_id
+    @id = PlayDBConnection.instance.last_insert_row_id
   end
 
   def update
     raise "#{self} not in database" unless self.id
     PlayDBConnection.instance.execute(<<-SQL, self.name, self.birth_year,self.id)
       UPDATE
-        playwright
+        playwrights
       SET
         name = ?, birth_year = ?
       WHERE
@@ -117,9 +117,9 @@ class Playwright
     SELECT
       *
     FROM
-      playwright
+      plays
     WHERE
-    id = ?
+    playwright_id = ?
     SQL
     x.map { |play| Play.new(play)  }
   end
